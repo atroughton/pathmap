@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#0f172a">
+    <title>Map Explorer</title>
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet">
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #f5f1e8;
+            overflow: hidden;
+            height: 100vh;
+        }
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            background: linear-gradient(135deg, #faf8f3 0%, #f5f1e8 100%);
+        }
+        .header {
+            background: rgba(255, 253, 247, 0.95);
+            backdrop-filter: blur(20px);
+            padding: 16px 20px;
+            padding-top: max(16px, env(safe-area-inset-top));
+            border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+            z-index: 100;
+        }
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .app-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .app-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #d4a574 0%, #c4915a 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(212, 165, 116, 0.3);
+        }
+        .app-icon svg {
+            width: 24px;
+            height: 24px;
+            color: white;
+        }
+        .title-text h1 {
+            font-size: 18px;
+            font-weight: 700;
+            color: #3d3020;
+            margin: 0;
+        }
+        .title-text p {
+            font-size: 12px;
+            color: #8b7355;
+            margin: 0;
+        }
+        .header-btn {
+            width: 40px;
+            height: 40px;
+            background: rgba(212, 165, 116, 0.15);
+            border: none;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .header-btn:active {
+            background: rgba(212, 165, 116, 0.25);
+            transform: scale(0.95);
+        }
+        .header-btn svg {
+            width: 20px;
+            height: 20px;
+            color: #8b7355;
+        }
+        .map-container {
+            flex: 1;
+            position: relative;
+            margin: 16px;
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+        #map {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 100%;
+            height: 100%;
+        }
+        .map-overlay {
+            position: absolute;
+            top: 16px;
+            left: 16px;
+            right: 16px;
+            display: flex;
+            justify-content: space-between;
+            z-index: 10;
+        }
+        .info-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            padding: 12px 16px;
+            border-radius: 16px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .info-card svg {
+            width: 20px;
+            height: 20px;
+            color: #c4915a;
+        }
+        .info-card span {
+            font-size: 14px;
+            font-weight: 600;
+            color: #3d3020;
+        }
+        .status-badge {
+            background: rgba(212, 165, 116, 0.95);
+            backdrop-filter: blur(20px);
+            padding: 8px 14px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            color: white;
+            box-shadow: 0 4px 12px rgba(212, 165, 116, 0.3);
+        }
+        .bottom-controls {
+            position: absolute;
+            bottom: 20px;
+            left: 16px;
+            right: 16px;
+            display: flex;
+            gap: 12px;
+            z-index: 10;
+        }
+        .location-btn {
+            flex: 1;
+            height: 56px;
+            background: linear-gradient(135deg, #d4a574 0%, #c4915a 100%);
+            border: none;
+            border-radius: 16px;
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            box-shadow: 0 8px 24px rgba(212, 165, 116, 0.4);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.2s;
+        }
+        .location-btn:active {
+            transform: scale(0.98);
+            box-shadow: 0 4px 16px rgba(212, 165, 116, 0.4);
+        }
+        .location-btn svg {
+            width: 22px;
+            height: 22px;
+        }
+        .icon-btn {
+            width: 56px;
+            height: 56px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border: none;
+            border-radius: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+            transition: all 0.2s;
+        }
+        .icon-btn:active {
+            transform: scale(0.95);
+        }
+        .icon-btn svg {
+            width: 24px;
+            height: 24px;
+            color: #8b7355;
+        }
+        .spinner {
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top: 3px solid white;
+            border-radius: 50%;
+            width: 22px;
+            height: 22px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .error-toast {
+            position: absolute;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(239, 68, 68, 0.95);
+            backdrop-filter: blur(20px);
+            color: white;
+            padding: 14px 20px;
+            border-radius: 16px;
+            box-shadow: 0 8px 24px rgba(239, 68, 68, 0.4);
+            z-index: 200;
+            display: none;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .loading-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, #faf8f3 0%, #f5f1e8 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 300;
+            gap: 20px;
+        }
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(212, 165, 116, 0.2);
+            border-top-color: #c4915a;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        .loading-text {
+            color: #3d3020;
+            font-size: 16px;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="header">
+            <div class="header-content">
+                <div class="app-title">
+                    <div class="app-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                            <circle cx="12" cy="10" r="3"></circle>
+                        </svg>
+                    </div>
+                    <div class="title-text">
+                        <h1>Map Explorer</h1>
+                        <p>Custom Map View</p>
+                    </div>
+                </div>
+                <button class="header-btn" onclick="refreshMap()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="23 4 23 10 17 10"></polyline>
+                        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <div class="map-container">
+            <div id="map"></div>
+            
+            <div class="loading-screen" id="loading">
+                <div class="loading-spinner"></div>
+                <div class="loading-text">Loading map...</div>
+            </div>
+            
+            <div class="error-toast" id="error"></div>
+            
+            <div class="map-overlay">
+                <div class="info-card">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                    <span id="statusText">Ready</span>
+                </div>
+                <div class="status-badge">Live</div>
+            </div>
+            
+            <div class="bottom-controls">
+                <button class="location-btn" id="locationBtn" onclick="centerOnLocation()">
+                    <svg id="locationIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <line x1="12" y1="2" x2="12" y2="4"></line>
+                        <line x1="12" y1="20" x2="12" y2="22"></line>
+                        <line x1="2" y1="12" x2="4" y2="12"></line>
+                        <line x1="20" y1="12" x2="22" y2="12"></line>
+                    </svg>
+                    <span id="btnText">Find Location</span>
+                </button>
+                <button class="icon-btn" onclick="map.zoomIn()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        <line x1="11" y1="8" x2="11" y2="14"></line>
+                        <line x1="8" y1="11" x2="14" y2="11"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        mapboxgl.accessToken = 'pk.eyJ1IjoiYXRyb3VnaHRvbjAiLCJhIjoiY20ydTVobzk2MDZ4aTJxcG52ZWVmbTVoayJ9.0-MtCojihJsfD5HW-1Z7jw';
+        
+        let map;
+        let userMarker;
+        let tracking = false;
+
+        map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/atroughton0/cmdx31syi00bn01recuwp0tl1',
+            center: [153.0251, -27.4698],
+            zoom: 12
+        });
+
+        map.on('load', () => {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('statusText').textContent = 'Ready';
+            map.addControl(new mapboxgl.NavigationControl({
+                showCompass: false
+            }), 'top-right');
+        });
+
+        map.on('error', (e) => {
+            console.error('Map error:', e);
+            showError('Failed to load map');
+            document.getElementById('loading').style.display = 'none';
+        });
+
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+            }, 3000);
+        }
+
+        function refreshMap() {
+            map.flyTo({
+                center: [153.0251, -27.4698],
+                zoom: 12,
+                duration: 1500
+            });
+            document.getElementById('statusText').textContent = 'Ready';
+        }
+
+        function centerOnLocation() {
+            if (tracking) return;
+            
+            const btn = document.getElementById('locationBtn');
+            const btnText = document.getElementById('btnText');
+            const icon = document.getElementById('locationIcon');
+            
+            tracking = true;
+            btnText.textContent = 'Locating...';
+            icon.outerHTML = '<div class="spinner"></div>';
+            document.getElementById('statusText').textContent = 'Finding you...';
+
+            if (!navigator.geolocation) {
+                showError('Location not available');
+                resetButton();
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const { longitude, latitude } = position.coords;
+
+                    map.flyTo({
+                        center: [longitude, latitude],
+                        zoom: 16,
+                        duration: 2000
+                    });
+
+                    if (userMarker) {
+                        userMarker.setLngLat([longitude, latitude]);
+                    } else {
+                        const el = document.createElement('div');
+                        el.style.cssText = 'width: 24px; height: 24px; border-radius: 50%; background: #c4915a; border: 4px solid white; box-shadow: 0 0 20px rgba(196, 145, 90, 0.6), 0 0 0 8px rgba(196, 145, 90, 0.2);';
+                        
+                        userMarker = new mapboxgl.Marker(el)
+                            .setLngLat([longitude, latitude])
+                            .addTo(map);
+                    }
+                    
+                    document.getElementById('statusText').textContent = 'Location found';
+                    resetButton();
+                },
+                (err) => {
+                    showError(err.code === 1 ? 'Location denied' : 'Location error');
+                    resetButton();
+                },
+                { enableHighAccuracy: true, timeout: 10000 }
+            );
+        }
+
+        function resetButton() {
+            tracking = false;
+            document.getElementById('btnText').textContent = 'Find Location';
+            const btn = document.getElementById('locationBtn');
+            btn.querySelector('.spinner')?.remove();
+            if (!btn.querySelector('#locationIcon')) {
+                btn.insertAdjacentHTML('afterbegin', '<svg id="locationIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="3"></circle><line x1="12" y1="2" x2="12" y2="4"></line><line x1="12" y1="20" x2="12" y2="22"></line><line x1="2" y1="12" x2="4" y2="12"></line><line x1="20" y1="12" x2="22" y2="12"></line></svg>');
+            }
+        }
+    </script>
+</body>
+</html>
